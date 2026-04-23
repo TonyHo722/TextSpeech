@@ -1,0 +1,38 @@
+# Build outputs
+/app/build/
+/build/
+
+# Gradle
+.gradle/
+gradle-*.zip
+local.properties
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# APK files (large binaries - should be distributed separately)
+*.apk
+*.aab
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Scratch / Test data
+input/
+output/
+
+# Android Studio / Android specific
+captures/
+*.jks
+*.keystore
+google-services.json
+
+# Log files
+*.log
+
+# Editor swap files
+*.swp
