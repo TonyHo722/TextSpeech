@@ -31,29 +31,41 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
+    data class SharedUrl(val url: String, val timestamp: Long = System.currentTimeMillis())
+    private val sharedUrlState = mutableStateOf(SharedUrl(""))
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        var initialUrl = ""
-        if (intent?.action == Intent.ACTION_SEND && intent.type?.startsWith("text/") == true) {
-            val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT) ?: ""
-            val urlRegex = Regex("(https?://[^\\s]+)")
-            val match = urlRegex.find(sharedText)
-            initialUrl = match?.value ?: sharedText
-        }
+        setIntent(intent)
+        handleIntent(intent)
 
         setContent {
             MaterialTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    MainScreen(initialUrl = initialUrl)
+                    MainScreen(sharedUrl = sharedUrlState.value)
                 }
             }
         }
     }
 
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_SEND && intent.type?.startsWith("text/") == true) {
+            val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT) ?: ""
+            val urlRegex = Regex("(https?://[^\\s]+)")
+            val match = urlRegex.find(sharedText)
+            sharedUrlState.value = SharedUrl(match?.value ?: sharedText)
+        }
+    }
+
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun MainScreen(initialUrl: String) {
+    fun MainScreen(sharedUrl: SharedUrl) {
         val coroutineScope = rememberCoroutineScope()
         var extractedText by remember { mutableStateOf("") }
         var chunks by remember { mutableStateOf(listOf<String>()) }
@@ -69,13 +81,29 @@ class MainActivity : ComponentActivity() {
 
         val listState = rememberLazyListState()
 
-        // Auto-extract when launched via Share
-        LaunchedEffect(initialUrl) {
-            if (initialUrl.isNotEmpty()) {
+        fun sendPlaybackAction(action: String, extra: Intent.() -> Unit = {}) {
+            val intent = Intent(this@MainActivity, TtsPlaybackService::class.java).apply {
+                this.action = action
+                extra()
+            }
+            startService(intent)
+        }
+
+        // Auto-extract and Auto-play when sharedUrl changes
+        LaunchedEffect(sharedUrl) {
+            val url = sharedUrl.url
+            if (url.isNotEmpty()) {
                 isLoading = true
-                extractedText = ArticleExtractor.extractTextFromUrl(initialUrl)
+                extractedText = ArticleExtractor.extractTextFromUrl(url)
                 chunks = extractedText.split("\n").filter { it.trim().isNotEmpty() }
                 isLoading = false
+
+                // Trigger playback automatically after extraction
+                if (extractedText.isNotEmpty()) {
+                    sendPlaybackAction(TtsPlaybackService.ACTION_PLAY) {
+                        putExtra(TtsPlaybackService.EXTRA_TEXT, extractedText)
+                    }
+                }
             }
         }
 
@@ -105,13 +133,6 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        fun sendPlaybackAction(action: String, extra: Intent.() -> Unit = {}) {
-            val intent = Intent(this@MainActivity, TtsPlaybackService::class.java).apply {
-                this.action = action
-                extra()
-            }
-            startService(intent)
-        }
 
         Scaffold(
             topBar = {
@@ -144,6 +165,64 @@ class MainActivity : ComponentActivity() {
                     .padding(paddingValues)
                     .padding(horizontal = 8.dp)
             ) {
+                // ── Article Text with Sentence Highlighting ────────────
+                Box(modifier = Modifier.weight(1f)) {
+                    if (isLoading) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    } else if (chunks.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                "Open the menu ⋮ to input a URL,\nor share a webpage from your browser.",
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            itemsIndexed(chunks) { index, chunk ->
+                                val isHighlighted = index == currentPlayingIndex
+                                val backgroundColor = if (isHighlighted) {
+                                    MaterialTheme.colorScheme.primaryContainer
+                                } else {
+                                    Color.Transparent
+                                }
+
+                                Text(
+                                    text = chunk,
+                                    fontSize = 16.sp,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(backgroundColor)
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                        .pointerInput(index) {
+                                            detectTapGestures(
+                                                onDoubleTap = {
+                                                    // Seek to this sentence
+                                                    sendPlaybackAction(TtsPlaybackService.ACTION_SEEK) {
+                                                        putExtra(TtsPlaybackService.EXTRA_INDEX, index)
+                                                    }
+                                                }
+                                            )
+                                        },
+                                    color = if (isHighlighted) {
+                                        MaterialTheme.colorScheme.onPrimaryContainer
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
                 // ── Compact 2-Row Control Box ──────────────────────────
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -162,7 +241,9 @@ class MainActivity : ComponentActivity() {
 
                             Button(
                                 onClick = {
-                                    if (isPlaying) {
+                                    val targetState = !isPlaying
+                                    isPlaying = targetState // Optimistic UI update
+                                    if (!targetState) {
                                         sendPlaybackAction(TtsPlaybackService.ACTION_PAUSE)
                                     } else {
                                         sendPlaybackAction(TtsPlaybackService.ACTION_PLAY) {
@@ -206,62 +287,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // ── Article Text with Sentence Highlighting ────────────
-                if (isLoading) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                } else if (chunks.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            "Open the menu ⋮ to input a URL,\nor share a webpage from your browser.",
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        itemsIndexed(chunks) { index, chunk ->
-                            val isHighlighted = index == currentPlayingIndex
-                            val backgroundColor = if (isHighlighted) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else {
-                                Color.Transparent
-                            }
-
-                            Text(
-                                text = chunk,
-                                fontSize = 16.sp,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(backgroundColor)
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                                    .pointerInput(index) {
-                                        detectTapGestures(
-                                            onDoubleTap = {
-                                                // Seek to this sentence
-                                                sendPlaybackAction(TtsPlaybackService.ACTION_SEEK) {
-                                                    putExtra(TtsPlaybackService.EXTRA_INDEX, index)
-                                                }
-                                            }
-                                        )
-                                    },
-                                color = if (isHighlighted) {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                }
-                            )
-                        }
-                    }
-                }
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
 

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTS App UI Simulation</title>
+    <style>
+        :root {
+            --primary: #6750A4;
+            --primary-container: #EADDFF;
+            --on-primary-container: #21005D;
+            --surface: #FEF7FF;
+            --on-surface: #1D1B20;
+            --outline: #79747E;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .phone-frame {
+            width: 360px;
+            height: 740px;
+            background-color: var(--surface);
+            border: 8px solid #333;
+            border-radius: 32px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .status-bar {
+            height: 24px;
+            padding: 4px 16px;
+            display: flex;
+            justify-content: flex-end;
+            font-size: 12px;
+            color: #333;
+        }
+
+        .app-bar {
+            height: 56px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            font-size: 20px;
+            font-weight: 500;
+            background-color: var(--surface);
+            border-bottom: 1px solid #eee;
+        }
+
+        .content {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .control-box {
+            background-color: #f5f5f5;
+            margin: 0 16px 16px 16px;
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .playback-row {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .speed-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        button {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-weight: 500;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: rgba(103, 80, 164, 0.08);
+        }
+
+        button.play-btn {
+            background-color: var(--primary);
+            color: white;
+            padding: 8px 24px;
+            border-radius: 20px;
+        }
+
+        button.play-btn:hover {
+            background-color: #5a4591;
+        }
+
+        .slider {
+            flex: 1;
+            height: 4px;
+            background: #ccc;
+            border-radius: 2px;
+            position: relative;
+        }
+
+        .slider-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--primary);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .sentence {
+            padding: 8px;
+            margin-bottom: 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+            line-height: 1.5;
+        }
+
+        .sentence.playing {
+            background-color: var(--primary-container);
+            color: var(--on-primary-container);
+        }
+
+        .toast {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+    </style>
+</head>
+<body>
+
+<div class="phone-frame">
+    <div class="status-bar">21:45 🔋</div>
+    <div class="app-bar">TTS Reader</div>
+    
+    <div class="content" id="article">
+        <!-- Chunks will be inserted here -->
+    </div>
+
+    <div class="control-box">
+        <div class="playback-row">
+            <button onclick="prev()">⏮ Prev</button>
+            <button id="playPauseBtn" class="play-btn" onclick="togglePlay()">▶ Play</button>
+            <button onclick="next()">Next ⏭</button>
+        </div>
+        <div class="speed-row">
+            <span style="font-size: 12px; width: 30px;">1.0x</span>
+            <div class="slider"><div class="slider-thumb"></div></div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">Double-tap to seek</div>
+</div>
+
+<script>
+    const chunks = [
+        "Apple Inc. is an American multinational technology company.",
+        "It is headquartered in Cupertino, California.",
+        "Apple is the world's largest technology company by revenue.",
+        "As of March 2023, Apple is the world's biggest company by market capitalization.",
+        "It is considered one of the Big Five American information technology companies.",
+        "The company was founded as Apple Computer Company on April 1, 1976.",
+        "It was founded by Steve Jobs, Steve Wozniak, and Ronald Wayne."
+    ];
+
+    let currentIndex = -1;
+    let isPlaying = false;
+    let timer = null;
+
+    const container = document.getElementById('article');
+    const playBtn = document.getElementById('playPauseBtn');
+    const toast = document.getElementById('toast');
+
+    function render() {
+        container.innerHTML = '';
+        chunks.forEach((text, i) => {
+            const div = document.createElement('div');
+            div.className = 'sentence' + (i === currentIndex ? ' playing' : '');
+            div.innerText = text;
+            div.onclick = () => showToast();
+            div.ondblclick = () => seek(i);
+            container.appendChild(div);
+        });
+
+        playBtn.innerHTML = isPlaying ? '⏸ Pause' : '▶ Play';
+        
+        if (currentIndex !== -1) {
+            const active = container.children[currentIndex];
+            active.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+
+    function togglePlay() {
+        isPlaying = !isPlaying;
+        if (isPlaying) {
+            if (currentIndex === -1) currentIndex = 0;
+            startTimer();
+        } else {
+            stopTimer();
+        }
+        render();
+    }
+
+    function startTimer() {
+        stopTimer();
+        timer = setInterval(() => {
+            if (currentIndex < chunks.length - 1) {
+                currentIndex++;
+                render();
+            } else {
+                isPlaying = false;
+                stopTimer();
+                render();
+            }
+        }, 3000);
+    }
+
+    function stopTimer() {
+        if (timer) clearInterval(timer);
+    }
+
+    function next() {
+        if (currentIndex < chunks.length - 1) {
+            currentIndex++;
+            if (isPlaying) startTimer();
+            render();
+        }
+    }
+
+    function prev() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            if (isPlaying) startTimer();
+            render();
+        }
+    }
+
+    function seek(index) {
+        currentIndex = index;
+        if (isPlaying) startTimer();
+        render();
+    }
+
+    function showToast() {
+        toast.style.opacity = '1';
+        setTimeout(() => toast.style.opacity = '0', 2000);
+    }
+
+    render();
+</script>
+
+</body>
+</html>

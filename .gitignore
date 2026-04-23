@@ -13,7 +13,9 @@ local.properties
 *.iws
 *.ipr
 
-# APK files (large binaries - should be distributed separately)
+# APK files
+# Ignore all APK files to keep the repository size small
+/**/*.apk
 *.apk
 *.aab
 

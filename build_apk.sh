@@ -50,6 +50,14 @@ export PATH=$HOME/opt/gradle/bin:$PATH
 # 5. Build the application!
 echo "Compiling the App..."
 cd /home/tonyho/workspace/TextSpeech
-gradle assembleDebug
+gradle clean assembleDebug
 
-echo "Build complete! APK should be located in /home/tonyho/workspace/TextSpeech/app/build/outputs/apk/debug/"
+# 6. Rename and Copy APK for the user
+TIMESTAMP=$(date +"%Y%m%d_%H%M")
+APK_NAME="TextSpeech_${TIMESTAMP}.apk"
+cp app/build/outputs/apk/debug/app-debug.apk ./"$APK_NAME"
+
+echo "----------------------------------------------------"
+echo "Build complete!"
+echo "Your new APK is: /home/tonyho/workspace/TextSpeech/$APK_NAME"
+echo "----------------------------------------------------"

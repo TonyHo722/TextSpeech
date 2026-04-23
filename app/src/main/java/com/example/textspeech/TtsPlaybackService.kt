@@ -171,6 +171,7 @@ class TtsPlaybackService : MediaSessionService(), TextToSpeech.OnInitListener {
                 val text = intent.getStringExtra(EXTRA_TEXT)
                 if (!text.isNullOrEmpty()) {
                     // New article — reset state
+                    ttsEngine?.stop()
                     chunks = text.split("\n").filter { it.trim().isNotEmpty() }
                     currentIndex = 0
                 }
