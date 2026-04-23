@@ -203,7 +203,8 @@ class MainActivity : ComponentActivity() {
                                         .pointerInput(index) {
                                             detectTapGestures(
                                                 onDoubleTap = {
-                                                    // Seek to this sentence
+                                                    // Seek to this sentence and start playing
+                                                    isPlaying = true // Optimistic UI update
                                                     sendPlaybackAction(TtsPlaybackService.ACTION_SEEK) {
                                                         putExtra(TtsPlaybackService.EXTRA_INDEX, index)
                                                     }

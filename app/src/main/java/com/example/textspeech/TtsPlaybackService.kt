@@ -212,9 +212,9 @@ class TtsPlaybackService : MediaSessionService(), TextToSpeech.OnInitListener {
                 if (targetIndex in chunks.indices) {
                     ttsEngine?.stop()
                     currentIndex = targetIndex
-                    if (isPlaying) {
-                        speakCurrentChunk()
-                    }
+                    isPlaying = true
+                    startForegroundStatus()
+                    speakCurrentChunk()
                     broadcastIndex()
                 }
             }
