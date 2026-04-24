@@ -1,16 +1,19 @@
 package com.example.textspeech
 
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 
 object ArticleExtractor {
+    private const val TAG = "ArticleExtractor"
 
     /**
      * Extracts readable text from a given URL.
      * Uses hybrid strategy: Jsoup DOM-based cleanup first, with raw string regex fallback for malformed sites.
      */
     suspend fun extractTextFromUrl(url: String): String = withContext(Dispatchers.IO) {
+        Log.d(TAG, "Extracting text from: $url")
         try {
             val response = Jsoup.connect(url)
                 .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -19,6 +22,7 @@ object ArticleExtractor {
 
             val document = response.parse()
             val title = document.title()
+            Log.d(TAG, "Title: $title")
 
             // Step 1: Remove all known UI chrome / boilerplate elements by CSS selector
             document.select(
@@ -45,13 +49,17 @@ object ArticleExtractor {
                 }
             }
 
+            Log.d(TAG, "Heuristic extraction length: ${longestText.length}")
+
             // Step 3: Fallback for severely broken HTML (e.g. unclosed script tags missing body)
             if (longestText.length < 500) {
-                var rawHtml = response.body()
+                Log.d(TAG, "Triggering regex fallback...")
+                var rawHtml = document.html()
                 rawHtml = rawHtml.replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), "\n")
                 rawHtml = rawHtml.replace(Regex("<p\\s*/?>", RegexOption.IGNORE_CASE), "\n\n")
                 rawHtml = rawHtml.replace(Regex("<[^>]+>"), "")
                 longestText = Jsoup.parse(rawHtml).text()
+                Log.d(TAG, "Fallback extraction length: ${longestText.length}")
             }
 
             // Step 4: Post-processing cleanup line by line
@@ -81,10 +89,12 @@ object ArticleExtractor {
             sb.append(title.takeIf { it.isNotBlank() } ?: "Extracted Article").append("\n\n")
             sb.append(cleanedLines.joinToString("\n\n"))
 
-            sb.toString().trim()
+            val result = sb.toString().trim()
+            Log.d(TAG, "Final extracted length: ${result.length}")
+            result
 
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Failed to extract content", e)
             "Failed to extract content: ${e.message}"
         }
     }
