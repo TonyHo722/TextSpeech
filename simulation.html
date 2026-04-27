@@ -1,284 +1,126 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TTS App UI Simulation</title>
-    <style>
-        :root {
-            --primary: #6750A4;
-            --primary-container: #EADDFF;
-            --on-primary-container: #21005D;
-            --surface: #FEF7FF;
-            --on-surface: #1D1B20;
-            --outline: #79747E;
-        }
-
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #f0f0f0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        .phone-frame {
-            width: 360px;
-            height: 740px;
-            background-color: var(--surface);
-            border: 8px solid #333;
-            border-radius: 32px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .status-bar {
-            height: 24px;
-            padding: 4px 16px;
-            display: flex;
-            justify-content: flex-end;
-            font-size: 12px;
-            color: #333;
-        }
-
-        .app-bar {
-            height: 56px;
-            display: flex;
-            align-items: center;
-            padding: 0 16px;
-            font-size: 20px;
-            font-weight: 500;
-            background-color: var(--surface);
-            border-bottom: 1px solid #eee;
-        }
-
-        .content {
-            flex: 1;
-            padding: 16px;
-            overflow-y: auto;
-        }
-
-        .control-box {
-            background-color: #f5f5f5;
-            margin: 0 16px 16px 16px;
-            padding: 12px;
-            border-radius: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
-        .playback-row {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .speed-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        button {
-            background: none;
-            border: none;
-            color: var(--primary);
-            font-weight: 500;
-            cursor: pointer;
-            padding: 8px 12px;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
-
-        button:hover {
-            background-color: rgba(103, 80, 164, 0.08);
-        }
-
-        button.play-btn {
-            background-color: var(--primary);
-            color: white;
-            padding: 8px 24px;
-            border-radius: 20px;
-        }
-
-        button.play-btn:hover {
-            background-color: #5a4591;
-        }
-
-        .slider {
-            flex: 1;
-            height: 4px;
-            background: #ccc;
-            border-radius: 2px;
-            position: relative;
-        }
-
-        .slider-thumb {
-            width: 16px;
-            height: 16px;
-            background: var(--primary);
-            border-radius: 50%;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .sentence {
-            padding: 8px;
-            margin-bottom: 4px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background 0.3s;
-            line-height: 1.5;
-        }
-
-        .sentence.playing {
-            background-color: var(--primary-container);
-            color: var(--on-primary-container);
-        }
-
-        .toast {
-            position: absolute;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #333;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Android Home Screen Simulation</title>
+<style>
+  body {
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #222;
+    font-family: 'Roboto', sans-serif;
+  }
+  .phone-screen {
+    width: 360px;
+    height: 640px;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    border-radius: 24px;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    color: white;
+    font-size: 12px;
+    margin-bottom: 40px;
+    opacity: 0.9;
+  }
+  .app-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 25px 10px;
+  }
+  .app-icon-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+  .app-icon-container:hover {
+    transform: scale(1.05);
+  }
+  .app-icon {
+    width: 60px;
+    height: 60px;
+    background-color: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    object-fit: cover;
+  }
+  .app-label {
+    margin-top: 6px;
+    color: white;
+    font-size: 11px;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 65px;
+  }
+  /* Dummy styling for other icons */
+  .dummy-icon { background: rgba(255,255,255,0.2); backdrop-filter: blur(5px); }
+  
+  .dock {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    height: 80px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 10px;
+  }
+</style>
 </head>
 <body>
 
-<div class="phone-frame">
-    <div class="status-bar">21:45 🔋</div>
-    <div class="app-bar">TTS Reader</div>
+<div class="phone-screen">
+  <div class="status-bar">
+    <span>12:00</span>
+    <span>100% 🔋</span>
+  </div>
+  
+  <div class="app-grid">
+    <!-- TextSpeech App with New Icon -->
+    <div class="app-icon-container">
+      <img class="app-icon" src="./picture/TextSpeech_icon_squared.png" alt="TextSpeech Icon">
+      <div class="app-label">TextSpeech</div>
+    </div>
     
-    <div class="content" id="article">
-        <!-- Chunks will be inserted here -->
-    </div>
+    <!-- Dummy Apps -->
+    <div class="app-icon-container"><div class="app-icon dummy-icon"></div><div class="app-label">Photos</div></div>
+    <div class="app-icon-container"><div class="app-icon dummy-icon"></div><div class="app-label">Camera</div></div>
+    <div class="app-icon-container"><div class="app-icon dummy-icon"></div><div class="app-label">Settings</div></div>
+    <div class="app-icon-container"><div class="app-icon dummy-icon"></div><div class="app-label">Maps</div></div>
+    <div class="app-icon-container"><div class="app-icon dummy-icon"></div><div class="app-label">Calendar</div></div>
+    <div class="app-icon-container"><div class="app-icon dummy-icon"></div><div class="app-label">Clock</div></div>
+    <div class="app-icon-container"><div class="app-icon dummy-icon"></div><div class="app-label">Weather</div></div>
+  </div>
 
-    <div class="control-box">
-        <div class="playback-row">
-            <button onclick="prev()">⏮ Prev</button>
-            <button id="playPauseBtn" class="play-btn" onclick="togglePlay()">▶ Play</button>
-            <button onclick="next()">Next ⏭</button>
-        </div>
-        <div class="speed-row">
-            <span style="font-size: 12px; width: 30px;">1.0x</span>
-            <div class="slider"><div class="slider-thumb"></div></div>
-        </div>
-    </div>
-
-    <div id="toast" class="toast">Double-tap to seek</div>
+  <!-- Bottom App Dock -->
+  <div class="dock">
+    <div class="app-icon dummy-icon" style="width: 50px; height: 50px; border-radius: 50%;"></div>
+    <div class="app-icon dummy-icon" style="width: 50px; height: 50px; border-radius: 50%;"></div>
+    <div class="app-icon dummy-icon" style="width: 50px; height: 50px; border-radius: 50%;"></div>
+    <div class="app-icon dummy-icon" style="width: 50px; height: 50px; border-radius: 50%;"></div>
+  </div>
 </div>
-
-<script>
-    const chunks = [
-        "Apple Inc. is an American multinational technology company.",
-        "It is headquartered in Cupertino, California.",
-        "Apple is the world's largest technology company by revenue.",
-        "As of March 2023, Apple is the world's biggest company by market capitalization.",
-        "It is considered one of the Big Five American information technology companies.",
-        "The company was founded as Apple Computer Company on April 1, 1976.",
-        "It was founded by Steve Jobs, Steve Wozniak, and Ronald Wayne."
-    ];
-
-    let currentIndex = -1;
-    let isPlaying = false;
-    let timer = null;
-
-    const container = document.getElementById('article');
-    const playBtn = document.getElementById('playPauseBtn');
-    const toast = document.getElementById('toast');
-
-    function render() {
-        container.innerHTML = '';
-        chunks.forEach((text, i) => {
-            const div = document.createElement('div');
-            div.className = 'sentence' + (i === currentIndex ? ' playing' : '');
-            div.innerText = text;
-            div.onclick = () => showToast();
-            div.ondblclick = () => seek(i);
-            container.appendChild(div);
-        });
-
-        playBtn.innerHTML = isPlaying ? '⏸ Pause' : '▶ Play';
-        
-        if (currentIndex !== -1) {
-            const active = container.children[currentIndex];
-            active.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    }
-
-    function togglePlay() {
-        isPlaying = !isPlaying;
-        if (isPlaying) {
-            if (currentIndex === -1) currentIndex = 0;
-            startTimer();
-        } else {
-            stopTimer();
-        }
-        render();
-    }
-
-    function startTimer() {
-        stopTimer();
-        timer = setInterval(() => {
-            if (currentIndex < chunks.length - 1) {
-                currentIndex++;
-                render();
-            } else {
-                isPlaying = false;
-                stopTimer();
-                render();
-            }
-        }, 3000);
-    }
-
-    function stopTimer() {
-        if (timer) clearInterval(timer);
-    }
-
-    function next() {
-        if (currentIndex < chunks.length - 1) {
-            currentIndex++;
-            if (isPlaying) startTimer();
-            render();
-        }
-    }
-
-    function prev() {
-        if (currentIndex > 0) {
-            currentIndex--;
-            if (isPlaying) startTimer();
-            render();
-        }
-    }
-
-    function seek(index) {
-        currentIndex = index;
-        if (isPlaying) startTimer();
-        render();
-    }
-
-    function showToast() {
-        toast.style.opacity = '1';
-        setTimeout(() => toast.style.opacity = '0', 2000);
-    }
-
-    render();
-</script>
 
 </body>
 </html>

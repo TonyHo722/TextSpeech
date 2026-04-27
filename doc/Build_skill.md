@@ -16,7 +16,7 @@ This document records the setup of the Android build environment and the success
 ## Results
 
 *   **Build Status**: `SUCCESSFUL`
-*   **APK Location**: `TextSpeech_20260424_1053.apk`
+*   **APK Location**: `TextSpeech_20260427_1707.apk` (Format: `TextSpeech_YYYYMMDD_HHMM.apk`)
 *   **APK Size**: ~11 MB
 
 ## Build Commands Reference
@@ -29,6 +29,10 @@ export ANDROID_HOME=$HOME/android-sdk
 export PATH=$JAVA_HOME/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$HOME/opt/gradle/bin:$PATH
 
 gradle clean assembleDebug
+
+# Rename the generated APK to include the current timestamp (YYYYMMDD_HHMM)
+TIMESTAMP=$(date +%Y%m%d_%H%M)
+cp app/build/outputs/apk/debug/app-debug.apk TextSpeech_${TIMESTAMP}.apk
 ```
 
 ---
